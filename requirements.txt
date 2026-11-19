@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-multipart
+pypdf
+sentence-transformers
+psycopg[binary]
+pgvector
+google-genai
+pytest
+httpx

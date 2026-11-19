@@ -15,3 +15,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     content      TEXT NOT NULL,
     embedding    vector(384)
 );
+
+-- Approximate nearest-neighbour index for cosine distance (<=>)
+CREATE INDEX IF NOT EXISTS chunks_embedding_hnsw
+    ON chunks USING hnsw (embedding vector_cosine_ops);

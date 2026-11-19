@@ -229,3 +229,6 @@ interview-prep.md
 rag-project-checklist.md
 notes/
 scratch/
+
+# PDF mẫu: không commit (bản quyền, dung lượng); ghi link tải trong README
+data/samples/*.pdf

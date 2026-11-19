@@ -6,7 +6,7 @@ Built with FastAPI, PostgreSQL + pgvector, sentence-transformers, Gemini, Docker
 
 > **Status: MVP (v0.1).** Vector retrieval only. Hybrid search, reranking, authentication, rate limiting and a retrieval evaluation suite are planned.
 
-**Live demo:** <http://54.252.230.82/docs> (Swagger UI)
+**Live demo:** <http://16.178.77.124/docs> (Swagger UI)
 
 > The demo runs on a small AWS EC2 instance that may be stopped between demos to save cost. If the link does not respond, it is probably offline: the code runs the same locally (see [Run it](#run-it)).
 
@@ -14,7 +14,7 @@ Built with FastAPI, PostgreSQL + pgvector, sentence-transformers, Gemini, Docker
 
 The demo has two public AWS documents loaded: the *Amazon VPC User Guide* and the *AWS Well-Architected Framework*.
 
-1. Open the [Swagger UI](http://54.252.230.82/docs), expand `POST /ask` and click **Try it out**.
+1. Open the [Swagger UI](http://16.178.77.124/docs), expand `POST /ask` and click **Try it out**.
 2. Use a body like:
 
 ```json

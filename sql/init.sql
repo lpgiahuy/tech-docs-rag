@@ -3,7 +3,10 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS documents (
     id          SERIAL PRIMARY KEY,
     filename    TEXT NOT NULL,
-    uploaded_at TIMESTAMPTZ DEFAULT now()
+    uploaded_at TIMESTAMPTZ DEFAULT now(),
+    -- 'processing' while the background ingest runs, then 'ready' or 'failed'
+    status      TEXT NOT NULL DEFAULT 'ready',
+    error       TEXT
 );
 
 -- all-MiniLM-L6-v2 produces 384-dimensional vectors

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
     top_k: int = 5
     min_score: float = 0.25
+    max_upload_mb: int = 20
 
 
 settings = Settings()

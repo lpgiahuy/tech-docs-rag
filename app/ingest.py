@@ -13,6 +13,7 @@ from app.config import settings
 from app.db import get_connection
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
+logger = logging.getLogger("app.ingest")
 
 BATCH_SIZE = 64
 
@@ -69,13 +70,35 @@ def embed(texts: list[str]) -> np.ndarray:
     )
 
 
-def ingest_file(path: str | Path) -> int:
-    """Ingest one PDF. Returns the number of chunks stored."""
-    path = Path(path)
-    rows = []  # (page, chunk_index, content)
+def build_rows(path: str | Path) -> list[tuple[int, int, str]]:
+    """Read a PDF and return [(page, chunk_index, content)] for all its chunks."""
+    rows = []
     for page, text in load_pdf(path):
         for index, chunk in enumerate(chunk_text(text, settings.chunk_size, settings.chunk_overlap)):
             rows.append((page, index, chunk))
+    return rows
+
+
+def _store_chunks(conn, document_id: int, rows: list[tuple[int, int, str]]) -> None:
+    """Embed the rows in batches and insert them into `chunks` using `conn`."""
+    with conn.cursor() as cur:
+        for i in range(0, len(rows), BATCH_SIZE):
+            batch = rows[i : i + BATCH_SIZE]
+            vectors = embed([content for _, _, content in batch])
+            cur.executemany(
+                "INSERT INTO chunks (document_id, page, chunk_index, content, embedding)"
+                " VALUES (%s, %s, %s, %s, %s)",
+                [
+                    (document_id, page, index, content, vec)
+                    for (page, index, content), vec in zip(batch, vectors)
+                ],
+            )
+
+
+def ingest_file(path: str | Path) -> int:
+    """Ingest one PDF from the command line. Returns the number of chunks stored."""
+    path = Path(path)
+    rows = build_rows(path)
     if not rows:
         print(f"{path.name}: no extractable text (scanned PDF?), skipped")
         return 0
@@ -84,20 +107,38 @@ def ingest_file(path: str | Path) -> int:
         document_id = conn.execute(
             "INSERT INTO documents (filename) VALUES (%s) RETURNING id", (path.name,)
         ).fetchone()[0]
-        with conn.cursor() as cur:
-            for i in range(0, len(rows), BATCH_SIZE):
-                batch = rows[i : i + BATCH_SIZE]
-                vectors = embed([content for _, _, content in batch])
-                cur.executemany(
-                    "INSERT INTO chunks (document_id, page, chunk_index, content, embedding)"
-                    " VALUES (%s, %s, %s, %s, %s)",
-                    [
-                        (document_id, page, index, content, vec)
-                        for (page, index, content), vec in zip(batch, vectors)
-                    ],
-                )
+        _store_chunks(conn, document_id, rows)
     print(f"{path.name}: {len(rows)} chunks stored")
     return len(rows)
+
+
+def process_document(document_id: int, path: str | Path) -> None:
+    """Background job for the API: fill an existing 'processing' document, then mark it.
+
+    Chunks and the 'ready' status are committed together, so a search never sees a
+    half-ingested document. On any error the document is marked 'failed' with the reason.
+    The uploaded temp file is always removed.
+    """
+    path = Path(path)
+    try:
+        rows = build_rows(path)
+        if not rows:
+            raise ValueError("no extractable text (scanned PDF? OCR is not supported)")
+        with get_connection() as conn:
+            _store_chunks(conn, document_id, rows)
+            conn.execute(
+                "UPDATE documents SET status = 'ready', error = NULL WHERE id = %s", (document_id,)
+            )
+        logger.info("document %s ingested: %d chunks", document_id, len(rows))
+    except Exception as exc:  # noqa: BLE001 - any failure must be recorded, not lost
+        logger.exception("ingest of document %s failed", document_id)
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE documents SET status = 'failed', error = %s WHERE id = %s",
+                (str(exc)[:500], document_id),
+            )
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def main(argv: list[str]) -> None:

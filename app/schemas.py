@@ -1,13 +1,16 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints
 
 Question = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 
 
 class AskRequest(BaseModel):
-    question: Question
+    # The example is what Swagger UI pre-fills in "Try it out".
+    question: Question = Field(
+        examples=["How many IP addresses does AWS reserve in each VPC subnet?"]
+    )
 
 
 class Source(BaseModel):

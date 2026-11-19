@@ -6,6 +6,6 @@ from app.config import settings
 
 def get_connection() -> psycopg.Connection:
     """Open a PostgreSQL connection with pgvector types registered."""
-    conn = psycopg.connect(settings.database_url)
+    conn = psycopg.connect(settings.database_url, connect_timeout=10)
     register_vector(conn)
     return conn

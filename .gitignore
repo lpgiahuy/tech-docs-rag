@@ -221,3 +221,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ghi chú cá nhân, không public
+DECISIONS.md
+LEARNING.md
+interview-prep.md
+rag-project-checklist.md
+notes/
+scratch/

@@ -6,7 +6,37 @@ Built with FastAPI, PostgreSQL + pgvector, sentence-transformers, Gemini, Docker
 
 > **Status: MVP (v0.1).** Vector retrieval only. Hybrid search, reranking, authentication, rate limiting and a retrieval evaluation suite are planned.
 
-**Live demo:** _link coming soon_
+**Live demo:** <http://54.252.230.82/docs> (Swagger UI)
+
+> The demo runs on a small AWS EC2 instance that may be stopped between demos to save cost. If the link does not respond, it is probably offline: the code runs the same locally (see [Run it](#run-it)).
+
+## Try the demo
+
+The demo has two public AWS documents loaded: the *Amazon VPC User Guide* and the *AWS Well-Architected Framework*.
+
+1. Open the [Swagger UI](http://54.252.230.82/docs), expand `POST /ask` and click **Try it out**.
+2. Use a body like:
+
+```json
+{"question": "How many IP addresses does AWS reserve in each VPC subnet?"}
+```
+
+Real response (shortened):
+
+```json
+{
+  "answer": "AWS reserves five IP addresses in each VPC subnet [aws_vpc_user_guide.pdf, page 41].",
+  "sources": [{"filename": "aws_vpc_user_guide.pdf", "page": 41, "score": 0.783, "snippet": "..."}],
+  "latency_ms": 4869
+}
+```
+
+More questions to try:
+
+- `What is the difference between a public and a private subnet?`
+- `What is the capital of France?` (not in the documents: the system should refuse instead of guessing)
+
+Uploading and deleting documents (`/documents`) is password-protected on the public demo, and `/ask` is rate limited, because the API has no user accounts yet. To use your own PDFs, run it locally.
 
 ## How it works
 
@@ -71,8 +101,8 @@ Set in `.env` (see `.env.example`):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `LLM_API_KEY` | – | Gemini API key |
-| `LLM_MODEL` | see `.env.example` | Gemini model name |
+| `LLM_API_KEY` | – | API key of your LLM provider (the provider is currently Gemini; the call is isolated in `app/generator.py`, so another provider only needs changes there) |
+| `LLM_MODEL` | see `.env.example` | Model name for that provider |
 | `TOP_K` | 5 | Chunks retrieved per question |
 | `MIN_SCORE` | 0.25 | Cosine similarity below which a chunk is ignored |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | 500 / 50 | Chunking in characters |

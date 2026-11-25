@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@127.0.0.1:5434/postgres"
     llm_api_key: str = ""
     llm_model: str = "gemini-3.5-flash-lite"
+    # Comma-separated models tried in order when llm_model is out of quota, overloaded or gone.
+    llm_fallback_models: str = "gemini-3.5-flash-lite,gemini-3.5-flash"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 500
     chunk_overlap: int = 50

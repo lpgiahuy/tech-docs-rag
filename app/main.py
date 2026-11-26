@@ -15,8 +15,6 @@ from app.reranker import rerank
 from app.retriever import search
 from app.schemas import AskRequest, AskResponse, DocumentOut, Source
 
-SNIPPET_CHARS = 200
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,7 +89,7 @@ def ask(request: AskRequest):
                 filename=c["filename"],
                 page=c["page"],
                 score=round(c["score"], 3),
-                snippet=c["content"][:SNIPPET_CHARS],
+                snippet=c["content"],
             )
             for c in filter_relevant(chunks)
         ]

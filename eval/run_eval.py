@@ -1,3 +1,12 @@
+"""Evaluate retrieval (Recall@k, MRR, latency) and, optionally, the generated answers.
+
+Usage:
+    python eval/run_eval.py                      # retrieval only, no LLM calls
+    python eval/run_eval.py --mode hybrid --rerank
+    python eval/run_eval.py --generate --resume  # also answer the questions with the LLM
+    python eval/run_eval.py --grades             # summarize the manual grades
+"""
+
 import argparse
 import json
 import math

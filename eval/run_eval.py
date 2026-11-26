@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from app.config import settings
 from app.generator import REFUSAL, LLMError, filter_relevant, generate
 from app.ingest import embed
-from app.retriever import search
+from app.retriever import add_neighbors, search
 
 EVAL_SET = ROOT / "eval" / "eval_set.json"
 ANSWERS = ROOT / "eval" / "answers.json"
@@ -141,7 +141,9 @@ def run_generation(results: list[dict], pause: float, resume: bool) -> None:
         if resume and old.get(item["id"], {}).get("question") == item["question"]:
             continue
         try:
-            answer, llm_ms = generate_with_retry(item["question"], r["chunks"][: settings.top_k])
+            answer, llm_ms = generate_with_retry(
+                item["question"], add_neighbors(item["question"], r["chunks"][: settings.top_k])
+            )
         except LLMError as exc:
             sys.exit(f"Stopped at {item['id']}: {str(exc)[:200]}\nRerun later with --resume.")
         total_ms = r["ms"] + llm_ms

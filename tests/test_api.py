@@ -48,6 +48,7 @@ def test_ask_returns_answer_and_only_relevant_sources(monkeypatch, docs_availabl
     body = response.json()
     assert body["answer"] == "Five [vpc.pdf, page 41]."
     assert [s["page"] for s in body["sources"]] == [41]  # the 0.10 chunk is below min_score
+    assert body["sources"][0]["snippet"] == CHUNKS[0]["content"]
     assert body["latency_ms"] >= 0
 
 
@@ -82,6 +83,14 @@ def test_ask_llm_failure_is_503(monkeypatch, docs_available):
     response = client.post("/ask", json={"question": "anything"})
     assert response.status_code == 503
     assert "unavailable" in response.json()["detail"]
+
+
+def test_ask_source_snippet_is_the_whole_chunk(monkeypatch, docs_available):
+    long_chunk = {**CHUNKS[0], "content": "word " * 100}  # a full chunk
+    monkeypatch.setattr(main, "search", lambda q: [long_chunk])
+    monkeypatch.setattr(main, "generate", lambda q, c: "An answer.")
+    body = client.post("/ask", json={"question": "anything"}).json()
+    assert body["sources"][0]["snippet"] == long_chunk["content"]
 
 
 # POST /documents

@@ -48,8 +48,8 @@ def build_context(chunks: list[dict]) -> str:
 
 
 def filter_relevant(chunks: list[dict]) -> list[dict]:
-    """Keep only chunks whose score reaches `min_score`."""
-    return [c for c in chunks if c["score"] >= settings.min_score]
+    """Keep chunks whose score reaches `min_score`, and the neighbours added around hits."""
+    return [c for c in chunks if c.get("neighbor") or c["score"] >= settings.min_score]
 
 
 def model_chain() -> list[str]:

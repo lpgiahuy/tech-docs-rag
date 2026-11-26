@@ -41,6 +41,24 @@ ORDER BY ts_rank(c.content_tsv, t.query) DESC, c.id
 LIMIT %(k)s
 """
 
+# The chunk just before and just after each hit, in reading order across page boundaries.
+NEIGHBOR_SQL = """
+SELECT h.id AS hit_id, n.id, n.content, n.page, d.filename,
+       1 - (n.embedding <=> %(q)s) AS score, n.offset_from_hit
+FROM chunks h
+JOIN documents d ON d.id = h.document_id
+CROSS JOIN LATERAL (
+    (SELECT c.id, c.content, c.page, c.embedding, -1 AS offset_from_hit FROM chunks c
+     WHERE c.document_id = h.document_id AND (c.page, c.chunk_index) < (h.page, h.chunk_index)
+     ORDER BY c.page DESC, c.chunk_index DESC LIMIT 1)
+    UNION ALL
+    (SELECT c.id, c.content, c.page, c.embedding, 1 FROM chunks c
+     WHERE c.document_id = h.document_id AND (c.page, c.chunk_index) > (h.page, h.chunk_index)
+     ORDER BY c.page, c.chunk_index LIMIT 1)
+) AS n
+WHERE h.id = ANY(%(ids)s)
+"""
+
 
 def _fetch(sql: str, params: dict) -> list[dict]:
     with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
@@ -71,6 +89,39 @@ def rrf(rankings: list[list[dict]], k: int = RRF_K) -> list[dict]:
             fused[chunk["id"]] = fused.get(chunk["id"], 0.0) + 1 / (k + rank)
             chunks[chunk["id"]] = chunk
     return [chunks[i] for i in sorted(fused, key=fused.get, reverse=True)]
+
+
+def add_neighbors(question: str, chunks: list[dict]) -> list[dict]:
+    """Surround each relevant hit with the chunks next to it, if `context_neighbors` is on.
+
+    Hits keep their ranking; each comes out as before, hit, after. Added chunks are marked
+    `neighbor`, so `min_score` does not drop them: they are there for their hit's sake.
+    Hits below `min_score` bring no neighbours. A chunk appears once.
+    """
+    hits = [c for c in chunks if c["score"] >= settings.min_score]
+    if not settings.context_neighbors or not hits:
+        return chunks
+
+    rows = _fetch(NEIGHBOR_SQL, {"q": embed([question])[0], "ids": [c["id"] for c in hits]})
+    around = {(row.pop("hit_id"), row.pop("offset_from_hit")): row for row in rows}
+    hit_ids = {c["id"] for c in chunks}
+    result, seen = [], set()
+    for chunk in chunks:
+        group = [chunk]
+        before, after = around.get((chunk["id"], -1)), around.get((chunk["id"], 1))
+        if before:
+            group.insert(0, before)
+        if after:
+            group.append(after)
+        for item in group:
+            if item["id"] in seen:
+                continue
+            seen.add(item["id"])
+            if item["id"] in hit_ids:  # a neighbour that was also found keeps its hit entry
+                result.append(next(c for c in chunks if c["id"] == item["id"]))
+            else:
+                result.append({**item, "neighbor": True})
+    return result
 
 
 def search(question: str, k: int | None = None) -> list[dict]:

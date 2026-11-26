@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     rerank: bool = False
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     candidate_k: int = 20  # chunks per list before fusion and reranking
+    context_neighbors: bool = False  # also give the LLM the chunk before and after each hit
     max_upload_mb: int = 20
 
 

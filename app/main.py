@@ -12,7 +12,7 @@ from app.config import settings
 from app.generator import REFUSAL, LLMError, filter_relevant, generate
 from app.ingest import embed, process_document
 from app.reranker import rerank
-from app.retriever import search
+from app.retriever import add_neighbors, search
 from app.schemas import AskRequest, AskResponse, DocumentOut, Source
 
 
@@ -76,7 +76,7 @@ def ask(request: AskRequest):
     if not documents.has_ready_documents():
         raise HTTPException(404, "No documents available yet. Upload a PDF first.")
 
-    chunks = search(request.question)
+    chunks = add_neighbors(request.question, search(request.question))
     try:
         answer = generate(request.question, chunks)
     except LLMError as exc:
@@ -90,6 +90,7 @@ def ask(request: AskRequest):
                 page=c["page"],
                 score=round(c["score"], 3),
                 snippet=c["content"],
+                neighbor=c.get("neighbor", False),
             )
             for c in filter_relevant(chunks)
         ]

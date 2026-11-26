@@ -18,6 +18,7 @@ class Source(BaseModel):
     page: int
     score: float
     snippet: str
+    neighbor: bool = False  # added next to a hit, not found by the search itself
 
 
 class AskResponse(BaseModel):

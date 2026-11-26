@@ -4,6 +4,7 @@ import pytest
 
 from app import reranker, retriever
 from app.config import settings
+from app.generator import filter_relevant
 
 
 def chunk(i):
@@ -71,3 +72,34 @@ def test_rerank_orders_by_cross_encoder_score(monkeypatch):
     monkeypatch.setattr(reranker, "_model", lambda: FakeModel())
     assert ids(reranker.rerank("q", [chunk(1), chunk(2), chunk(3)])) == [2, 1, 3]
     assert reranker.rerank("q", []) == []
+
+
+def test_add_neighbors_off_by_default_leaves_chunks_alone(monkeypatch):
+    monkeypatch.setattr(settings, "context_neighbors", False)
+    hits = [chunk(5)]
+    assert retriever.add_neighbors("q", hits) == hits
+
+
+def test_add_neighbors_wraps_hits_without_repeats(monkeypatch):
+    def row(hit, offset):
+        return {**chunk(hit + offset), "score": 0.01, "hit_id": hit, "offset_from_hit": offset}
+
+    asked = {}
+
+    def fetch(sql, params):
+        asked.update(params)
+        return [row(5, -1), row(5, 1), row(6, -1), row(6, 1)]
+
+    monkeypatch.setattr(settings, "context_neighbors", True)
+    monkeypatch.setattr(settings, "min_score", 0.25)
+    monkeypatch.setattr(retriever, "embed", lambda texts: [None])
+    monkeypatch.setattr(retriever, "_fetch", fetch)
+    irrelevant = {**chunk(90), "score": 0.1}
+
+    result = retriever.add_neighbors("q", [chunk(5), chunk(6), irrelevant])
+
+    assert asked["ids"] == [5, 6]  # a hit below min_score brings no neighbours
+    assert ids(result) == [4, 5, 6, 7, 90]
+    assert [c.get("neighbor", False) for c in result] == [True, False, False, True, False]
+    # the added low-score neighbours survive the score filter, the irrelevant hit does not
+    assert ids(filter_relevant(result)) == [4, 5, 6, 7]

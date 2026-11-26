@@ -108,6 +108,7 @@ Set in `.env` (see `.env.example`):
 | `KEYWORD_MATCH` | `any` | Keyword search needs `any` or `all` of the question's words in a chunk |
 | `RERANK` | `false` | Rerank candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2` |
 | `CANDIDATE_K` | 20 | Candidates per list before fusion and reranking |
+| `CONTEXT_NEIGHBORS` | `false` | Also send the chunk before and after each hit to the LLM; those sources are marked `neighbor: true` |
 | `MIN_SCORE` | 0.25 | Cosine similarity below which a chunk is ignored |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | 500 / 50 | Chunking in characters |
 | `MAX_UPLOAD_MB` | 20 | Upload size limit |

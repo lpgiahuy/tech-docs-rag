@@ -1,3 +1,12 @@
+"""Evaluate retrieval (Recall@k, MRR, latency) and, optionally, the generated answers.
+
+Usage:
+    python eval/run_eval.py                      # retrieval only, no LLM calls
+    python eval/run_eval.py --mode hybrid --rerank
+    python eval/run_eval.py --generate --resume  # also answer the questions with the LLM
+    python eval/run_eval.py --grades             # summarize the manual grades
+"""
+
 import argparse
 import json
 import math
@@ -66,7 +75,7 @@ def print_retrieval(results: list[dict]) -> None:
         rank = "n/a" if not item["relevant_source"] else (r["rank"] or "-")
         print(
             f"  {item['id']}  {item['category']:<12} rank={rank!s:<4} "
-            f"top score={r['chunks'][0]['score']:.3f}  {r['ms']:6.0f} ms"
+            f"top score={max((c['score'] for c in r['chunks']), default=0):.3f}  {r['ms']:6.0f} ms"
         )
 
     header = "".join(f"{f'R@{k}':>8}" for k in KS)
@@ -188,8 +197,17 @@ def main() -> None:
     parser.add_argument("--grades", action="store_true", help="summarize manual grades")
     parser.add_argument("--model", help="evaluate this model instead of LLM_MODEL")
     parser.add_argument("--pause", type=float, default=5.0, help="seconds between LLM calls")
+    parser.add_argument("--mode", choices=("vector", "keyword", "hybrid"), help="retrieval mode")
+    parser.add_argument("--keyword-match", choices=("all", "any"), help="words a chunk must hold")
+    parser.add_argument("--rerank", action=argparse.BooleanOptionalAction, help="cross-encoder")
     args = parser.parse_args()
 
+    if args.mode:
+        settings.retrieval_mode = args.mode
+    if args.keyword_match:
+        settings.keyword_match = args.keyword_match
+    if args.rerank is not None:
+        settings.rerank = args.rerank
     settings.llm_fallback_models = ""
     if args.model:
         global ANSWERS
@@ -200,6 +218,10 @@ def main() -> None:
     if args.grades:
         print_grades(items)
         return
+    print(
+        f"Retrieval: mode={settings.retrieval_mode}, keyword_match={settings.keyword_match}, "
+        f"rerank={settings.rerank}, embedding={settings.embedding_model}, chunk={settings.chunk_size}"
+    )
     results = retrieve(items)
     print_retrieval(results)
     if args.generate:

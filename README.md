@@ -4,7 +4,7 @@ Upload technical manuals (PDF) and ask questions in natural language. Answers co
 
 Built with FastAPI, PostgreSQL + pgvector, sentence-transformers, Gemini, Docker and AWS EC2.
 
-> **Status: MVP (v0.1).** Vector retrieval only. Hybrid search, reranking, authentication, rate limiting and a retrieval evaluation suite are planned.
+> **Status:** MVP (v0.1) is deployed. Hybrid search, reranking and a retrieval evaluation are implemented and compared below. Authentication and rate limiting are planned.
 
 **Live demo:** <http://16.178.77.124/docs> (Swagger UI)
 
@@ -47,7 +47,7 @@ question ──► embed ──► top-k nearest chunks (cosine, HNSW index) ─
 ```
 
 - **Ingest** runs in the background; `GET /documents` shows `processing`, `ready` or `failed`.
-- **Retrieval** uses pgvector cosine distance with an HNSW index.
+- **Retrieval** uses pgvector cosine distance with an HNSW index by default. Hybrid search (plus PostgreSQL full-text search, fused with Reciprocal Rank Fusion) and cross-encoder reranking can be switched on; see [Experiments](#experiments).
 - **Generation** sends only the retrieved chunks to Gemini with instructions to answer from them, cite `[file, page N]`, and refuse otherwise. Chunks below a similarity threshold never reach the model.
 
 ## Run it
@@ -104,13 +104,56 @@ Set in `.env` (see `.env.example`):
 | `LLM_API_KEY` | – | API key of your LLM provider (the provider is currently Gemini; the call is isolated in `app/generator.py`, so another provider only needs changes there) |
 | `LLM_MODEL` | see `.env.example` | Model name for that provider |
 | `TOP_K` | 5 | Chunks retrieved per question |
+| `RETRIEVAL_MODE` | `vector` | `vector`, `keyword` or `hybrid` |
+| `KEYWORD_MATCH` | `any` | Keyword search needs `any` or `all` of the question's words in a chunk |
+| `RERANK` | `false` | Rerank candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| `CANDIDATE_K` | 20 | Candidates per list before fusion and reranking |
 | `MIN_SCORE` | 0.25 | Cosine similarity below which a chunk is ignored |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | 500 / 50 | Chunking in characters |
 | `MAX_UPLOAD_MB` | 20 | Upload size limit |
 
+## Experiments
+
+Evaluation set: 30 questions on the two sample documents, 25 answerable (10 using the document's exact terms, 8 paraphrased, 7 needing several facts) and 5 unanswerable. A hit means a chunk from a labelled page is in the top k. Latency is retrieval only (no LLM), measured on a laptop CPU.
+
+```bash
+python eval/run_eval.py --mode hybrid --rerank
+```
+
+**Chunking and embedding model** (vector search):
+
+| Chunk / overlap | Embedding model | Recall@5 | Recall@8 | MRR |
+|---|---|---|---|---|
+| 300 / 30 | all-MiniLM-L6-v2 | 0.72 | 0.88 | 0.57 |
+| **500 / 50** | **all-MiniLM-L6-v2** | **0.88** | **0.92** | **0.68** |
+| 1000 / 100 | all-MiniLM-L6-v2 | 0.80 | 0.80 | 0.57 |
+| 500 / 50 | bge-small-en-v1.5 (with query instruction) | 0.80 | 0.88 | 0.71 |
+
+**Retrieval method** (500 / 50, all-MiniLM-L6-v2):
+
+| Method | Recall@5 | Recall@8 | MRR | Recall@5 exact terms | Recall@5 paraphrased | p95 latency |
+|---|---|---|---|---|---|---|
+| **Vector (default)** | 0.88 | 0.92 | 0.68 | 0.90 | 0.88 | 81 ms |
+| Keyword | 0.68 | 0.80 | 0.52 | 1.00 | 0.38 | 112 ms |
+| Hybrid (RRF) | 0.84 | 0.92 | 0.74 | 0.80 | 0.75 | 175 ms |
+| Hybrid + rerank | 0.84 | 0.88 | 0.65 | 0.90 | 0.62 | 767 ms |
+
+- Keyword search found every exact-term question in its top 5 but only 3 of 8 paraphrased ones.
+- Hybrid search ranked correct pages higher on average (MRR 0.68 → 0.74) but did not raise Recall@5.
+- Reranking did not help overall and made retrieval several times slower.
+- Requiring all words of the question (`plainto_tsquery` as is) gave keyword search a Recall@5 of only 0.20, so the words are combined with OR. Hybrid with the all-words form scored 0.92 / MRR 0.70.
+- With 25 questions, one question is 0.04, so most of these differences are too small to be conclusive. Vector search stays the default because nothing clearly beat it.
+- The page labels were extended after looking at vector search results and are still incomplete, which can favour vector search over the other methods.
+
 ## Deployment
 
 Runs on a single AWS EC2 instance with Docker Compose, behind an Nginx reverse proxy. The database port is never exposed publicly.
+
+A database created before full-text search was added needs one upgrade before using `keyword` or `hybrid` (safe to run again):
+
+```bash
+docker compose exec -T db psql -U postgres < sql/init.sql
+```
 
 ## Known limitations
 

@@ -11,6 +11,7 @@ from app import documents
 from app.config import settings
 from app.generator import REFUSAL, LLMError, filter_relevant, generate
 from app.ingest import embed, process_document
+from app.reranker import rerank
 from app.retriever import search
 from app.schemas import AskRequest, AskResponse, DocumentOut, Source
 
@@ -19,7 +20,9 @@ SNIPPET_CHARS = 200
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    embed(["warm up"])  # load the embedding model now, not during the first user request
+    embed(["warm up"])  # load the models now, not during the first user request
+    if settings.rerank:
+        rerank("warm up", [{"content": "warm up"}])
     yield
 
 

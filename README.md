@@ -141,10 +141,30 @@ python eval/run_eval.py --mode hybrid --rerank
 
 - Keyword search found every exact-term question in its top 5 but only 3 of 8 paraphrased ones.
 - Hybrid search ranked correct pages higher on average (MRR 0.68 → 0.74) but did not raise Recall@5.
-- Reranking did not help overall and made retrieval several times slower.
+- Reranking did not improve these retrieval metrics overall and made retrieval several times slower.
 - Requiring all words of the question (`plainto_tsquery` as is) gave keyword search a Recall@5 of only 0.20, so the words are combined with OR. Hybrid with the all-words form scored 0.92 / MRR 0.70.
-- With 25 questions, one question is 0.04, so most of these differences are too small to be conclusive. Vector search stays the default because nothing clearly beat it.
+- With 25 questions, one question is 0.04, so most of these retrieval differences are too small to be conclusive.
 - The page labels were extended after looking at vector search results and are still incomplete, which can favour vector search over the other methods.
+
+**Answer quality** (25 answerable questions, 500 / 50, all-MiniLM-L6-v2, `gemini-3.5-flash-lite`):
+
+| Configuration | Chunks retrieved | Correct | Partial | Wrong |
+|---|---|---|---|---|
+| **Vector (default)** | 8 | 15 | 4 | 6 |
+| Vector + neighbours | 8 + neighbours | 20 | 4 | 1 |
+| Vector, control | 24 | 19 | 3 | 3 |
+| Hybrid + rerank | 8 | 19 | 4 | 2 |
+| Hybrid + rerank + neighbours | 8 + neighbours | 23 | 1 | 1 |
+| Hybrid + rerank, control | 24 | 21 | 2 | 2 |
+
+"Neighbours" (`CONTEXT_NEIGHBORS=true`) also sends the chunk before and after each hit, across page boundaries. The 24-chunk controls send a similar amount of text without it.
+
+- Hybrid + rerank + neighbours answered 8 more questions correctly than the default, although its page-level Recall@5 is not higher: finding the labelled page does not show whether the context is complete enough to answer.
+- Much of the gain comes from sending more text. Against its same-size control, neighbours add 1 to 2 questions, which is within run-to-run variation.
+- Neighbours fixed a case that more chunks did not: a sentence at the end of one page introducing a list on the next.
+- Each configuration was run once and graded manually with AI assistance, not blind.
+- Of the 5 unanswerable questions, every configuration refused all 5, except the hybrid 24-chunk control, which answered one with a price that does appear in the documents (so that label is doubtful).
+- Vector search is still the default: the reranker's memory use and latency have not been measured on the deployment server, and neighbours send about three times more text to the LLM.
 
 ## Deployment
 

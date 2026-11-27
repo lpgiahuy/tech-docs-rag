@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 ARG EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+ARG RERANK_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -13,6 +14,7 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
+RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('${RERANK_MODEL}')"
 
 COPY app ./app
 

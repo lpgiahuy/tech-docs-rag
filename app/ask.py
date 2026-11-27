@@ -8,7 +8,7 @@ Usage:
 import sys
 
 from app.generator import generate
-from app.retriever import search
+from app.retriever import add_neighbors, search
 
 
 def main(argv: list[str]) -> None:
@@ -18,7 +18,7 @@ def main(argv: list[str]) -> None:
     if not question:
         sys.exit('usage: python -m app.ask [--retrieve-only] "your question"')
 
-    chunks = search(question)
+    chunks = add_neighbors(question, search(question))
     print("Retrieved chunks:", flush=True)
     for c in chunks:
         print(f"  {c['score']:.3f}  {c['filename']} p.{c['page']}: {c['content'][:100]}", flush=True)

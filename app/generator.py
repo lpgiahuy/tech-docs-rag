@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 
 import httpx
@@ -6,6 +7,11 @@ from google.genai import errors as genai_errors
 from google.genai import types
 
 from app.config import settings
+
+logger = logging.getLogger("app.generator")
+
+# Another model may succeed: not found, quota exhausted, or the service is failing.
+FALLBACK_STATUS = {404, 429, 500, 502, 503, 504}
 
 
 class LLMError(Exception):
@@ -42,8 +48,34 @@ def build_context(chunks: list[dict]) -> str:
 
 
 def filter_relevant(chunks: list[dict]) -> list[dict]:
-    """Keep only chunks whose score reaches `min_score`."""
-    return [c for c in chunks if c["score"] >= settings.min_score]
+    """Keep chunks whose score reaches `min_score`, and the neighbours added around hits."""
+    return [c for c in chunks if c.get("neighbor") or c["score"] >= settings.min_score]
+
+
+def model_chain() -> list[str]:
+    """The primary model followed by the fallbacks, without blanks or repeats."""
+    names = [settings.llm_model, *settings.llm_fallback_models.split(",")]
+    return list(dict.fromkeys(name.strip() for name in names if name.strip()))
+
+
+def _call_llm(prompt: str):
+    """Call the first model of the chain that works. Raises LLMError when none does.
+
+    Errors another model cannot fix (bad request, bad key) are raised at once.
+    """
+    models = model_chain()
+    for position, model in enumerate(models, start=1):
+        try:
+            return _client().models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0),
+            )
+        except (genai_errors.APIError, httpx.HTTPError) as exc:
+            retryable = isinstance(exc, httpx.HTTPError) or exc.code in FALLBACK_STATUS
+            if not retryable or position == len(models):
+                raise LLMError(f"{type(exc).__name__}: {exc}") from exc
+            logger.warning("model %s failed (%s), trying %s", model, type(exc).__name__, models[position])
 
 
 def generate(question: str, chunks: list[dict]) -> str:
@@ -57,12 +89,5 @@ def generate(question: str, chunks: list[dict]) -> str:
         return REFUSAL
 
     prompt = f"Context:\n{build_context(relevant)}\n\nQuestion: {question}"
-    try:
-        response = _client().models.generate_content(
-            model=settings.llm_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0),
-        )
-    except (genai_errors.APIError, httpx.HTTPError) as exc:
-        raise LLMError(f"{type(exc).__name__}: {exc}") from exc
+    response = _call_llm(prompt)
     return (response.text or "").strip() or REFUSAL

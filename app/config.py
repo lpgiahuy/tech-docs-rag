@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,11 +11,18 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@127.0.0.1:5434/postgres"
     llm_api_key: str = ""
     llm_model: str = "gemini-3.5-flash-lite"
+    llm_fallback_models: str = "gemini-3.5-flash-lite,gemini-3.5-flash"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 500
     chunk_overlap: int = 50
     top_k: int = 5
     min_score: float = 0.25
+    retrieval_mode: Literal["vector", "keyword", "hybrid"] = "vector"
+    keyword_match: Literal["all", "any"] = "any"
+    rerank: bool = False
+    rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    candidate_k: int = 20  # chunks per list before fusion and reranking
+    context_neighbors: bool = False  # also give the LLM the chunk before and after each hit
     max_upload_mb: int = 20
 
 

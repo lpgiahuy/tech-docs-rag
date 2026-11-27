@@ -1,0 +1,306 @@
+[
+  {
+    "id": "q01",
+    "category": "exact",
+    "question": "What does the SKIPDATA log-status mean in a VPC flow log record?",
+    "expected_answer": "Some flow log records were skipped during the aggregation interval, for example because of an internal capacity constraint or internal error.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 381,
+    "also_relevant_pages": [
+      394
+    ]
+  },
+  {
+    "id": "q02",
+    "category": "exact",
+    "question": "What does the ErrorPortAllocation metric of a NAT gateway count?",
+    "expected_answer": "The number of times the NAT gateway could not allocate a source port; above zero means too many concurrent connections.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 325,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q03",
+    "category": "exact",
+    "question": "What bandwidth does a NAT gateway support, and how far does it scale?",
+    "expected_answer": "5 Gbps, automatically scaling up to 100 Gbps.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 291,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q04",
+    "category": "exact",
+    "question": "What is the allowed IPv4 CIDR block size for a VPC?",
+    "expected_answer": "Between a /16 netmask and a /28 netmask.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 33,
+    "also_relevant_pages": [
+      35
+    ]
+  },
+  {
+    "id": "q05",
+    "category": "exact",
+    "question": "What is the default quota for VPCs per Region?",
+    "expected_answer": "5 (adjustable).",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 735,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q06",
+    "category": "exact",
+    "question": "What is the default value of the enableDnsSupport VPC attribute?",
+    "expected_answer": "true",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 135,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q07",
+    "category": "exact",
+    "question": "What ephemeral port range do Windows Server 2008 and later versions use?",
+    "expected_answer": "49152-65535",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 601,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q08",
+    "category": "exact",
+    "question": "Which service is located at the IPv4 address 169.254.169.253?",
+    "expected_answer": "The Route 53 Resolver (Amazon DNS server / AmazonProvidedDNS).",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 133,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q09",
+    "category": "exact",
+    "question": "What does REL05-BP03 recommend for controlling retry calls?",
+    "expected_answer": "Exponential backoff with jitter and a capped number of attempts.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 662,
+    "also_relevant_pages": [
+      663
+    ]
+  },
+  {
+    "id": "q10",
+    "category": "exact",
+    "question": "What are the six pillars of the AWS Well-Architected Framework?",
+    "expected_answer": "Operational excellence, security, reliability, performance efficiency, cost optimization, sustainability.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 15,
+    "also_relevant_pages": [
+      16
+    ]
+  },
+  {
+    "id": "q11",
+    "category": "paraphrase",
+    "question": "My private server loses its internet connection after sitting quiet for a few minutes. Why?",
+    "expected_answer": "A NAT gateway times out connections idle for 350 seconds or more and returns RST.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 339,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q12",
+    "category": "paraphrase",
+    "question": "If the instance firewall lets a request in, do I need another rule to let the reply go back out?",
+    "expected_answer": "No. Security groups are stateful, so responses are allowed regardless of outbound rules.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 568,
+    "also_relevant_pages": [
+      593,
+      394,
+      565,
+      613,
+      614
+    ]
+  },
+  {
+    "id": "q13",
+    "category": "paraphrase",
+    "question": "When two paths in my routing configuration both match a destination, which one is chosen?",
+    "expected_answer": "The most specific route (longest prefix match).",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 188,
+    "also_relevant_pages": [
+      180
+    ]
+  },
+  {
+    "id": "q14",
+    "category": "paraphrase",
+    "question": "How can I get a big discount on spare compute if my jobs can tolerate being interrupted?",
+    "expected_answer": "Spot Instances, up to 90 percent off on-demand price.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 1030,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q15",
+    "category": "paraphrase",
+    "question": "A queue sometimes hands my worker the same message twice. How should the worker be built?",
+    "expected_answer": "Make the consumer idempotent so a repeated message has no additional effect.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 641,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q16",
+    "category": "paraphrase",
+    "question": "How do I stop my service from continuing to hammer a downstream system that is already failing?",
+    "expected_answer": "Circuit breaker pattern: stop calls after a failure threshold and probe periodically.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 656,
+    "also_relevant_pages": [
+      657
+    ]
+  },
+  {
+    "id": "q17",
+    "category": "paraphrase",
+    "question": "Should I work out in advance exactly how many servers I will need?",
+    "expected_answer": "No. Stop guessing capacity; scale in and out automatically with demand.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 14,
+    "also_relevant_pages": [
+      586
+    ]
+  },
+  {
+    "id": "q18",
+    "category": "paraphrase",
+    "question": "How can a team rehearse its reaction to an outage before a real one happens?",
+    "expected_answer": "Run game days that simulate failures or events to test systems, processes and team responses.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 22,
+    "also_relevant_pages": [
+      14,
+      790,
+      806
+    ]
+  },
+  {
+    "id": "q19",
+    "category": "multi",
+    "question": "How do security groups and network ACLs differ in how they treat response traffic?",
+    "expected_answer": "Security groups are stateful (responses allowed automatically); network ACLs are stateless (responses need explicit rules).",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 593,
+    "also_relevant_pages": [
+      394,
+      565,
+      614
+    ]
+  },
+  {
+    "id": "q20",
+    "category": "multi",
+    "question": "Which IP addresses are reserved in a 10.0.0.0/24 subnet, and what is each used for?",
+    "expected_answer": ".0 network, .1 VPC router, .2 DNS, .3 future use, .255 broadcast.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 41,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q21",
+    "category": "multi",
+    "question": "What is the difference between a public and a private NAT gateway?",
+    "expected_answer": "Public: reaches the internet, in a public subnet with an Elastic IP. Private: reaches other VPCs/on-premises, no Elastic IP, internet traffic is dropped.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 289,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q22",
+    "category": "multi",
+    "question": "My NAT gateway has port allocation errors. How do I detect this and fix it?",
+    "expected_answer": "Watch ErrorPortAllocation/PacketsDropCount; add secondary IPv4 addresses (up to 7) to the NAT gateway.",
+    "relevant_source": "aws_vpc_user_guide.pdf",
+    "relevant_page": 296,
+    "also_relevant_pages": [
+      295,
+      325
+    ]
+  },
+  {
+    "id": "q23",
+    "category": "multi",
+    "question": "What are the steps for running a game day?",
+    "expected_answer": "Define the scenario, prepare the environment, run the simulation, analyze results.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 22,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q24",
+    "category": "multi",
+    "question": "What are the general design principles of the Well-Architected Framework?",
+    "expected_answer": "Stop guessing capacity, test at production scale, automate with experimentation in mind, evolutionary architectures, drive with data, improve through game days.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 14,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q25",
+    "category": "multi",
+    "question": "Which disaster recovery strategies are listed, and what must be defined before choosing one?",
+    "expected_answer": "Backup and restore, pilot light, warm standby, active-active; define RTO and RPO first.",
+    "relevant_source": "aws_well_architected_framework.pdf",
+    "relevant_page": 724,
+    "also_relevant_pages": [
+      725,
+      815
+    ]
+  },
+  {
+    "id": "q26",
+    "category": "unanswerable",
+    "question": "What is the hourly price in US dollars of a NAT gateway in us-east-1?",
+    "expected_answer": null,
+    "relevant_source": null,
+    "relevant_page": null,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q27",
+    "category": "unanswerable",
+    "question": "How much memory does an EC2 t3.small instance have?",
+    "expected_answer": null,
+    "relevant_source": null,
+    "relevant_page": null,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q28",
+    "category": "unanswerable",
+    "question": "What is the maximum execution timeout of an AWS Lambda function?",
+    "expected_answer": null,
+    "relevant_source": null,
+    "relevant_page": null,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q29",
+    "category": "unanswerable",
+    "question": "How many nines of durability is Amazon S3 Standard designed for?",
+    "expected_answer": null,
+    "relevant_source": null,
+    "relevant_page": null,
+    "also_relevant_pages": []
+  },
+  {
+    "id": "q30",
+    "category": "unanswerable",
+    "question": "What is the maximum operating temperature of the sensor?",
+    "expected_answer": null,
+    "relevant_source": null,
+    "relevant_page": null,
+    "also_relevant_pages": []
+  }
+]

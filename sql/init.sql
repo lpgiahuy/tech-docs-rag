@@ -22,3 +22,11 @@ CREATE TABLE IF NOT EXISTS chunks (
 -- Approximate nearest-neighbour index for cosine distance (<=>)
 CREATE INDEX IF NOT EXISTS chunks_embedding_hnsw
     ON chunks USING hnsw (embedding vector_cosine_ops);
+
+-- Full-text search for hybrid retrieval. IF NOT EXISTS so that running this file again
+-- also upgrades a database created before the column existed.
+ALTER TABLE chunks
+    ADD COLUMN IF NOT EXISTS content_tsv tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', content)) STORED;
+
+CREATE INDEX IF NOT EXISTS chunks_content_tsv ON chunks USING gin (content_tsv);
